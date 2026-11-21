@@ -9,7 +9,7 @@ prometheus:
     serviceMonitorSelectorNilUsesHelmValues: false
     podMonitorSelectorNilUsesHelmValues: false
     ruleSelectorNilUsesHelmValues: false
-    retention: 3d
+    retention: 2d
     resources:
       requests: { cpu: 200m, memory: 512Mi }
 
