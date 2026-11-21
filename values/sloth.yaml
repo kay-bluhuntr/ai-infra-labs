@@ -1,0 +1,4 @@
+# Sloth turns short SLO definitions (slos/) into Prometheus recording rules
+# and multi-window burn-rate alerts.
+commonPlugins:
+  enabled: false   # pulls a Git repo of optional plugins; not needed here

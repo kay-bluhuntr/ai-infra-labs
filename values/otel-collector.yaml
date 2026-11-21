@@ -1,0 +1,82 @@
+# OpenTelemetry Collector: receives OTLP from your apps and routes each signal.
+#
+#   metrics -> Prometheus exporter (:8889) -> scraped by Prometheus via ServiceMonitor
+#   traces  -> debug log for now; Tempo from Lab 3
+#   logs    -> debug log for now; Loki from Lab 3
+
+mode: deployment
+fullnameOverride: otel-collector     # service name: otel-collector.monitoring.svc
+
+image:
+  repository: otel/opentelemetry-collector-contrib   # contrib build includes the Prometheus exporter
+
+resources:
+  requests: { cpu: 50m, memory: 128Mi }
+  limits: { memory: 512Mi }
+
+ports:
+  # Not needed on a laptop.
+  jaeger-compact: { enabled: false }
+  jaeger-thrift: { enabled: false }
+  jaeger-grpc: { enabled: false }
+  zipkin: { enabled: false }
+  # The collector's own health metrics (accepted, refused, sent, failed).
+  metrics: { enabled: true }
+  # Application metrics re-exposed in Prometheus format.
+  prom-exporter:
+    enabled: true
+    containerPort: 8889
+    servicePort: 8889
+    protocol: TCP
+
+serviceMonitor:
+  enabled: true
+  metricsEndpoints:
+    - port: metrics         # collector self-monitoring (used by the SLO in Lab 4)
+      interval: 15s
+    - port: prom-exporter   # your application metrics
+      interval: 15s
+
+config:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: ${env:MY_POD_IP}:4317
+        http:
+          endpoint: ${env:MY_POD_IP}:4318
+
+  processors:
+    batch: {}
+
+  exporters:
+    debug:
+      verbosity: basic      # one summary line per batch in the collector log
+
+    prometheus:
+      endpoint: ${env:MY_POD_IP}:8889
+      resource_to_telemetry_conversion:
+        enabled: true       # resource attributes (service.name, run.id) become labels
+
+    # Defined now, switched on in Lab 3 by adding them to the pipelines below.
+    otlp/tempo:
+      endpoint: tempo.monitoring.svc:4317
+      tls:
+        insecure: true
+    otlphttp/loki:
+      endpoint: http://loki.monitoring.svc:3100/otlp
+
+  service:
+    pipelines:
+      metrics:
+        receivers: [otlp]
+        processors: [memory_limiter, batch]
+        exporters: [prometheus]
+      traces:
+        receivers: [otlp]
+        processors: [memory_limiter, batch]
+        exporters: [debug]          # Lab 3: change to [otlp/tempo]
+      logs:
+        receivers: [otlp]
+        processors: [memory_limiter, batch]
+        exporters: [debug]          # Lab 3: change to [otlphttp/loki]

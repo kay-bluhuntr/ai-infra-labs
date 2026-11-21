@@ -1,0 +1,70 @@
+# Values for kube-prometheus-stack on a local kind cluster.
+# Every change here is a Git commit; Argo CD applies it within about 3 minutes.
+
+prometheus:
+  prometheusSpec:
+    # Pick up every ServiceMonitor, PodMonitor and PrometheusRule in the cluster,
+    # not only the ones labelled for this Helm release. The collector (Lab 1)
+    # and Sloth's SLO rules (Lab 4) rely on this.
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    retention: 3d
+    resources:
+      requests: { cpu: 200m, memory: 512Mi }
+
+alertmanager:
+  alertmanagerSpec:
+    resources:
+      requests: { cpu: 10m, memory: 32Mi }
+
+grafana:
+  adminPassword: labs-admin   # local only; use a Secret anywhere real
+  defaultDashboardsTimezone: browser
+  sidecar:
+    dashboards:
+      searchNamespace: ALL    # load any ConfigMap labelled grafana_dashboard: "1" (Lab 4)
+  # Loki and Tempo are installed in Lab 3. Until then these two data sources
+  # show as failing in Grafana, which is expected.
+  additionalDataSources:
+    - name: Loki
+      uid: loki
+      type: loki
+      url: http://loki.monitoring.svc:3100
+      access: proxy
+      jsonData:
+        derivedFields:
+          # Logs sent over OTLP carry trace_id as structured metadata.
+          # This turns it into a button that opens the trace in Tempo.
+          - name: TraceID
+            matcherType: label
+            matcherRegex: trace_id
+            datasourceUid: tempo
+            url: "$${__value.raw}"
+            urlDisplayLabel: View trace
+    - name: Tempo
+      uid: tempo
+      type: tempo
+      url: http://tempo.monitoring.svc:3200
+      access: proxy
+      jsonData:
+        tracesToLogsV2:
+          # From a trace, jump to the log lines written during it.
+          datasourceUid: loki
+          filterByTraceID: true
+          spanStartTimeShift: "-5m"
+          spanEndTimeShift: "5m"
+          customQuery: false
+        nodeGraph:
+          enabled: true
+
+# kind runs these control-plane components bound to 127.0.0.1, so Prometheus
+# cannot scrape them. Switching them off avoids permanently red targets.
+kubeEtcd:
+  enabled: false
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeProxy:
+  enabled: false

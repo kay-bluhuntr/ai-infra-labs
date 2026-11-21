@@ -1,0 +1,21 @@
+# The "app of apps". Argo CD watches the platform/ folder of your repo and
+# creates every Application it finds there. To add a component: add a file
+# to platform/, commit, push. To remove one: delete the file, commit, push.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/kay-bluhuntr/ai-infra-labs.git
+    targetRevision: main
+    path: platform
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

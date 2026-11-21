@@ -1,0 +1,8 @@
+# Tempo in single-binary mode, storing traces on local disk.
+# The chart's defaults already accept OTLP on 4317 (gRPC) and 4318 (HTTP).
+fullnameOverride: tempo   # service name: tempo.monitoring.svc
+tempo:
+  retention: 72h
+  reportingEnabled: false
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }

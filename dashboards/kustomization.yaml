@@ -1,0 +1,14 @@
+# Turns each JSON file in this folder into a ConfigMap that Grafana's sidecar
+# loads as a dashboard. To add a dashboard: drop its JSON here, add it to the
+# list below, commit and push.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: monitoring
+generatorOptions:
+  disableNameSuffixHash: true
+  labels:
+    grafana_dashboard: "1"
+configMapGenerator:
+  - name: dashboard-training-run
+    files:
+      - training-run.json

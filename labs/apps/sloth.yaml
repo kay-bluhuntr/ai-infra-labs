@@ -1,0 +1,36 @@
+# Lab 4: copy this file into platform/ to install Sloth (SLOs as code).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: sloth
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - repoURL: https://slok.github.io/sloth
+      chart: sloth
+      targetRevision: 0.16.0
+      helm:
+        releaseName: sloth
+        valueFiles:
+          - $values/values/sloth.yaml
+    - repoURL: https://github.com/kay-bluhuntr/ai-infra-labs.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 10
+      backoff: { duration: 15s, factor: 2, maxDuration: 3m }

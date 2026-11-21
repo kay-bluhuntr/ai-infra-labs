@@ -1,0 +1,9 @@
+# Minimal Argo CD for a laptop. Installed once with Helm (Lab 1, step 3);
+# after that, Argo CD deploys everything else from your Git repo.
+configs:
+  params:
+    server.insecure: true   # plain HTTP behind kubectl port-forward; fine locally, never in production
+dex:
+  enabled: false            # no SSO locally; log in as admin
+notifications:
+  enabled: false

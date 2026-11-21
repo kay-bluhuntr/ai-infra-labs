@@ -1,0 +1,7 @@
+# One-node kind cluster for the observability labs.
+# Create it with:  kind create cluster --config bootstrap/kind-config.yaml
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: ai-infra
+nodes:
+  - role: control-plane

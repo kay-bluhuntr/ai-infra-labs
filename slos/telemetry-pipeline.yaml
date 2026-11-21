@@ -1,0 +1,59 @@
+# SLOs as code: "the telemetry pipeline delivers what it receives".
+#
+# Sloth reads this and generates, as PrometheusRule objects:
+#   * recording rules for the error ratio over 5m, 30m, 1h, 2h, 6h, 1d, 3d and 30d windows
+#   * multi-window, multi-burn-rate alerts:
+#       page   (severity=page)   if the 30-day budget burns 14.4x too fast over 1h AND 5m,
+#                                or 6x over 6h AND 30m
+#       ticket (severity=ticket) if it burns 3x over 1d AND 2h, or 1x over 3d AND 6h
+#
+# Before you push: check the metric names exist in Prometheus (Lab 4, step 2).
+apiVersion: sloth.slok.dev/v1
+kind: PrometheusServiceLevel
+metadata:
+  name: telemetry-pipeline
+  namespace: monitoring
+spec:
+  service: telemetry-pipeline
+  labels:
+    owner: platform
+  slos:
+    - name: traces-delivered
+      objective: 99.5
+      description: "99.5% of spans the collector sends to Tempo are delivered."
+      sli:
+        events:
+          errorQuery: |
+            (sum(rate(otelcol_exporter_send_failed_spans_total{exporter="otlp/tempo"}[{{.window}}])) or vector(0))
+          totalQuery: |
+            (sum(rate(otelcol_exporter_sent_spans_total{exporter="otlp/tempo"}[{{.window}}])) or vector(0))
+            +
+            (sum(rate(otelcol_exporter_send_failed_spans_total{exporter="otlp/tempo"}[{{.window}}])) or vector(0))
+      alerting:
+        name: TracesNotDelivered
+        annotations:
+          summary: "The collector is failing to deliver spans to Tempo."
+        pageAlert:
+          labels: { severity: page }
+        ticketAlert:
+          labels: { severity: ticket }
+
+    - name: logs-delivered
+      objective: 99.5
+      description: "99.5% of log records the collector sends to Loki are delivered."
+      sli:
+        events:
+          errorQuery: |
+            (sum(rate(otelcol_exporter_send_failed_log_records_total{exporter="otlphttp/loki"}[{{.window}}])) or vector(0))
+          totalQuery: |
+            (sum(rate(otelcol_exporter_sent_log_records_total{exporter="otlphttp/loki"}[{{.window}}])) or vector(0))
+            +
+            (sum(rate(otelcol_exporter_send_failed_log_records_total{exporter="otlphttp/loki"}[{{.window}}])) or vector(0))
+      alerting:
+        name: LogsNotDelivered
+        annotations:
+          summary: "The collector is failing to deliver log records to Loki."
+        pageAlert:
+          labels: { severity: page }
+        ticketAlert:
+          labels: { severity: ticket }
