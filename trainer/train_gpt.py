@@ -265,6 +265,7 @@ def main():
     except KeyboardInterrupt:
         log.info("run %s stopped early", run_id)
 
+    model.eval()  # turn off dropout: MPS attention can't run it, and sampling shouldn't use it anyway
     sample = model.generate(torch.zeros((1, 1), dtype=torch.long, device=a.device), 300)[0].tolist()
     print("\n--- sample ---\n" + "".join(chars[i] for i in sample) + "\n--------------")
     tel.shutdown()

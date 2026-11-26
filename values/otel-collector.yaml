@@ -75,8 +75,8 @@ config:
       traces:
         receivers: [otlp]
         processors: [memory_limiter, batch]
-        exporters: [debug]          # Lab 3: change to [otlp/tempo]
+        exporters: [otlp/tempo]          # Lab 3: change to [otlp/tempo]
       logs:
         receivers: [otlp]
         processors: [memory_limiter, batch]
-        exporters: [debug]          # Lab 3: change to [otlphttp/loki]
+        exporters: [otlphttp/loki]          # Lab 3: change to [otlphttp/loki]
